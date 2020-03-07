@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -11,25 +12,58 @@ namespace cw1
         {
             // var newPerson = new Person { FirstName = "Ola" };
             // HTTP GET, HTTP POST, HTTP PUT, HTTP PATCH, HTTP DELETE
+            
+            
 
-            var url = args.Length > 0 ? args[0] : "https://www.pja.edu.pl";
-            var httpClient = new HttpClient();
-
-            var response = await httpClient.GetAsync(url);
-
-            if(response.IsSuccessStatusCode)
-            {
-                string htmlContent = await response.Content.ReadAsStringAsync();
-                var regex = new Regex("[a-z]+[a-z0-9]*@[a-z0-9]+\\.[a-z]+", RegexOptions.IgnoreCase);
-                var matches = regex.Matches(htmlContent);
-
-                foreach (var match in matches)
+            if (args.Length >= 1)
+            {                
+                var url = args[0];
+                if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
                 {
-                    Console.WriteLine(match.ToString());
+                    using (var httpClient = new HttpClient()) // żeby Dispose się wykonał
+                    {
+                        using (var response = await httpClient.GetAsync(url))
+
+                            if (response.IsSuccessStatusCode)
+                            {
+                                string htmlContent = await response.Content.ReadAsStringAsync();
+                                var regex = new Regex("[a-z]+[a-z0-9]*@[a-z0-9]+(\\.[a-z0-9]+)?\\.[a-z]+", RegexOptions.IgnoreCase);
+                                var matches = regex.Matches(htmlContent);
+
+                                if (matches.Count == 0)
+                                {
+                                    Console.WriteLine("Nie znaleziono adresów email");
+                                }
+                                else
+                                {
+                                    List<string> usedEmails = new List<string>();
+                                    foreach (var match in matches)
+                                    {
+                                        string matchString = match.ToString();
+                                        if (!usedEmails.Contains(matchString))
+                                        {
+                                            Console.WriteLine(matchString);
+                                            usedEmails.Add(matchString);
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                Console.WriteLine("Błąd w czasie pobierania strony");
+                            }
+                    }
+                }
+                else
+                {
+                    throw new ArgumentException();
                 }
             }
+            else
+            {
+                throw new ArgumentNullException();
+            }
 
-            //Console.WriteLine("Hello World!");
         }
     }
 }
